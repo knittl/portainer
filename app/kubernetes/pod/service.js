@@ -15,13 +15,32 @@ class KubernetesPodService {
     this.logsAsync = this.logsAsync.bind(this);
     this.deleteAsync = this.deleteAsync.bind(this);
   }
+
+  async getAsync(namespace, name) {
+    try {
+      const params = new KubernetesCommonParams();
+      params.id = name;
+      const [raw, yaml] = await Promise.all([
+        this.KubernetesPods(namespace).get(params).$promise,
+        this.KubernetesPods(namespace).getYaml(params).$promise
+      ]);
+      const res = {
+        Raw: raw,
+        Yaml: yaml.data,
+      };
+      return res;
+    } catch (err) {
+      throw new PortainerError('Unable to retrieve pod', err)
+    }
+  }
+
   /**
    * GET ALL
    */
   async getAllAsync(namespace) {
     try {
       const data = await this.KubernetesPods(namespace).get().$promise;
-      return _.map(data.items, (item) => KubernetesPodConverter.apiToModel(item));
+      return data.items;
     } catch (err) {
       throw new PortainerError('Unable to retrieve pods', err);
     }
